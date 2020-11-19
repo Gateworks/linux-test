@@ -55,10 +55,15 @@ static const struct of_device_id imx_blk_ctl_of_match[] = {
 };
 MODULE_DEVICE_TABLE(of, imx_blk_ctl_of_match);
 
+static int imx8mm_blk_ctl_probe(struct platform_device *pdev)
+{
+	return imx_blk_ctl_register(pdev);
+}
+
 static struct platform_driver imx_blk_ctl_driver = {
-	.probe = imx_blk_ctl_probe,
+	.probe = imx8mm_blk_ctl_probe,
 	.driver = {
-		.name = "imx-blk-ctl",
+		.name = "imx8mm-blk-ctl",
 		.of_match_table = of_match_ptr(imx_blk_ctl_of_match),
 		.pm = &imx_blk_ctl_pm_ops,
 	},
