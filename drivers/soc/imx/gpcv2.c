@@ -199,7 +199,7 @@ static int imx_pgc_power_up(struct generic_pm_domain *genpd)
 {
 	struct imx_pgc_domain *domain = to_imx_pgc_domain(genpd);
 	u32 reg_val;
-	int ret;
+	int ret, i;
 
 	ret = pm_runtime_get_sync(domain->dev);
 	if (ret) {
@@ -275,10 +275,10 @@ static int imx_pgc_power_up(struct generic_pm_domain *genpd)
 	/* Disable reset clocks for all devices in the domain */
 	for (i = 0; i < domain->num_clks; i++) {
 		/* Keep the DISPMIX active, it is needed by both LCDIF and MIPI */
-		if (strcmp(__clk_get_name(domain->clk[i]), "disp_root_clk") &&
-		    strcmp(__clk_get_name(domain->clk[i]), "disp_axi_root_clk") &&
-		    strcmp(__clk_get_name(domain->clk[i]), "disp_apb_root_clk"))
-			clk_disable_unprepare(domain->clk[i]);
+		if (strcmp(__clk_get_name(domain->clks[i].clk), "disp_root_clk") &&
+		    strcmp(__clk_get_name(domain->clks[i].clk), "disp_axi_root_clk") &&
+		    strcmp(__clk_get_name(domain->clks[i].clk), "disp_apb_root_clk"))
+			clk_disable_unprepare(domain->clks[i].clk);
 	}
 
 	return 0;
