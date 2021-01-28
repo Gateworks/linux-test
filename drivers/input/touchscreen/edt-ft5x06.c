@@ -31,6 +31,8 @@
 
 #include <asm/unaligned.h>
 
+#define EDT_POLLING_INTERVAL		17 /* 60fps */
+
 #define WORK_REGISTER_THRESHOLD		0x00
 #define WORK_REGISTER_REPORT_RATE	0x08
 #define WORK_REGISTER_GAIN		0x30
@@ -278,6 +280,18 @@ static irqreturn_t edt_ft5x06_ts_isr(int irq, void *dev_id)
 out:
 	return IRQ_HANDLED;
 }
+
+#ifdef EDT_POLLING_INTERVAL
+static void edt_ft5x06_ts_poll(struct input_dev *input)
+{
+	struct edt_ft5x06_ts_data *tsdata = input_get_drvdata(input);
+
+	edt_ft5x06_ts_isr(0, tsdata);
+
+	input_mt_sync_frame(input);
+	input_sync(input);
+}
+#endif
 
 static int edt_ft5x06_register_write(struct edt_ft5x06_ts_data *tsdata,
 				     u8 addr, u8 value)
@@ -1243,8 +1257,22 @@ static int edt_ft5x06_ts_probe(struct i2c_client *client,
 					NULL, edt_ft5x06_ts_isr, irq_flags,
 					client->name, tsdata);
 	if (error) {
+#ifdef EDT_POLLING_INTERVAL
+		error = input_setup_polling(input, edt_ft5x06_ts_poll);
+		if (error) {
+			dev_err(&client->dev,
+				"Unable to set up polling mode: %d\n", error);
+			return error;
+		}
+		input_set_drvdata(input, tsdata);
+
+		input_set_poll_interval(input, EDT_POLLING_INTERVAL);
+		dev_info(&client->dev, "Polling device at %dms\n",
+			input_get_poll_interval(input));
+#else
 		dev_err(&client->dev, "Unable to request touchscreen IRQ.\n");
 		return error;
+#endif
 	}
 
 	error = devm_device_add_group(&client->dev, &edt_ft5x06_attr_group);
