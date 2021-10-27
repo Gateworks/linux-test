@@ -35,6 +35,13 @@
 		};
 	};
 
+	cam24m: cam24m {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <24000000>;
+		clock-output-names = "cam24m";
+	};
+
 	pcie0_refclk: pcie0-refclk {
 		compatible = "fixed-clock";
 		#clock-cells = <0>;
@@ -100,6 +107,10 @@
 	};
 };
 
+&csi {
+	status = "okay";
+};
+
 /* off-board header */
 &ecspi2 {
 	pinctrl-names = "default";
@@ -132,6 +143,37 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_i2c3>;
 	status = "okay";
+
+	imx219: sensor@10 {
+		compatible = "sony,imx219";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_imx219>;
+		reg = <0x10>;
+		clocks = <&cam24m>;
+		reset-gpios = <&gpio1 1 GPIO_ACTIVE_HIGH>;
+
+		port {
+			/* MIPI CSI-2 bus endpoint */
+			imx219_to_mipi_csi2: endpoint {
+				remote-endpoint = <&imx8mm_mipi_csi_in>;
+				clock-lanes = <0>;
+				data-lanes = <1 2>;
+				link-frequencies = /bits/ 64 <456000000>;
+			};
+		};
+	};
+};
+
+&mipi_csi {
+	status = "okay";
+	ports {
+		port@0 {
+			imx8mm_mipi_csi_in: endpoint {
+				remote-endpoint = <&imx219_to_mipi_csi2>;
+				data-lanes = <1 2>;
+			};
+		};
+	};
 };
 
 &pcie_phy {
@@ -294,6 +336,12 @@
 		fsl,pins = <
 			MX8MM_IOMUXC_I2C3_SCL_I2C3_SCL		0x400001c3
 			MX8MM_IOMUXC_I2C3_SDA_I2C3_SDA		0x400001c3
+		>;
+	};
+
+	pinctrl_imx219: imx219grp {
+		fsl,pins = <
+			MX8MM_IOMUXC_GPIO1_IO01_GPIO1_IO1	0x41
 		>;
 	};
 
