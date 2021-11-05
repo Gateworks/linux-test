@@ -18,6 +18,7 @@
 
 #define BLK_SFT_RSTN	0x0
 #define BLK_CLK_EN	0x4
+#define BLK_MIPI_RESET_DIV	0x8
 
 struct imx8m_blk_ctrl_domain;
 
@@ -37,6 +38,7 @@ struct imx8m_blk_ctrl_domain_data {
 	const char *gpc_name;
 	u32 rst_mask;
 	u32 clk_mask;
+	u32 mipi_rst_mask;
 };
 
 #define DOMAIN_MAX_CLKS 3
@@ -79,6 +81,7 @@ static int imx8m_blk_ctrl_power_on(struct generic_pm_domain *genpd)
 
 	/* put devices into reset */
 	regmap_clear_bits(bc->regmap, BLK_SFT_RSTN, data->rst_mask);
+	regmap_clear_bits(bc->regmap, BLK_MIPI_RESET_DIV, data->mipi_rst_mask);
 
 	/* enable upstream and blk-ctrl clocks to allow reset to propagate */
 	ret = clk_bulk_prepare_enable(data->num_clks, domain->clks);
@@ -100,6 +103,7 @@ static int imx8m_blk_ctrl_power_on(struct generic_pm_domain *genpd)
 
 	/* release reset */
 	regmap_set_bits(bc->regmap, BLK_SFT_RSTN, data->rst_mask);
+	regmap_set_bits(bc->regmap, BLK_MIPI_RESET_DIV, data->mipi_rst_mask);
 
 	/* disable upstream clocks */
 	clk_bulk_disable_unprepare(data->num_clks, domain->clks);
@@ -123,6 +127,7 @@ static int imx8m_blk_ctrl_power_off(struct generic_pm_domain *genpd)
 	/* put devices into reset and disable clocks */
 	regmap_clear_bits(bc->regmap, BLK_SFT_RSTN, data->rst_mask);
 	regmap_clear_bits(bc->regmap, BLK_CLK_EN, data->clk_mask);
+	regmap_clear_bits(bc->regmap, BLK_MIPI_RESET_DIV, data->mipi_rst_mask);
 
 	/* power down upstream GPC domain */
 	pm_runtime_put(domain->power_dev);
@@ -489,6 +494,7 @@ static const struct imx8m_blk_ctrl_domain_data imx8mm_disp_blk_ctl_domain_data[]
 		.gpc_name = "mipi-csi",
 		.rst_mask = BIT(3) | BIT(4),
 		.clk_mask = BIT(10) | BIT(11),
+		.mipi_rst_mask = BIT(16) | BIT(17),
 	},
 };
 
